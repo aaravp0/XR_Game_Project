@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.XR.Interaction.Toolkit;
 
 public class SocketChecker : MonoBehaviour
 {
@@ -7,52 +8,59 @@ public class SocketChecker : MonoBehaviour
     public UnityEvent onAllSocketsAligned;
     public UnityEvent onSocketsMisaligned;
 
-    [Header("Options")]
-    public float angleTolerance = 1f;
-    public bool triggerOnce = true;
-
-    private bool previousAlignmentState = false;
-
-    private void Update()
+    public void AreAllSocketsValid()
     {
-        bool allCorrect = AreAllSocketsValid(angleTolerance);
+        bool allValid = true;
 
-        if (allCorrect && (!triggerOnce || !previousAlignmentState))
+        foreach (Transform child in transform)
+        {
+            if (allValid)
+            {
+                Transform secondChild = child.GetChild(0);
+
+                float xRotation = secondChild.eulerAngles.x;
+
+                // Normalize the rotation to be between 0 and 360
+                if (xRotation < 0)
+                {
+                    xRotation += 360f;
+                }
+                else if (xRotation > 360f)
+                {
+                    xRotation -= 360f;
+                }
+
+                SocketAngleAndType obj = child.GetComponent<SocketAngleAndType>();
+
+                float objRotation = obj.assignedAngle;
+
+                int layer = child.gameObject.layer;
+
+                XRSocketInteractor socket = child.GetComponent<XRSocketInteractor>();
+
+                IXRSelectInteractable objName = socket.GetOldestInteractableSelected();
+
+                Transform interactableTransform = objName.transform;
+
+                int layer2 = interactableTransform.gameObject.layer;
+
+                if(layer )
+
+                if (xRotation != objRotation || layer != layer2)
+                {
+                    allValid = false;
+                }
+            }
+        }
+
+        if(allValid)
         {
             onAllSocketsAligned?.Invoke();
         }
-        else if (!allCorrect && (!triggerOnce || previousAlignmentState))
+        else
         {
             onSocketsMisaligned?.Invoke();
         }
 
-        previousAlignmentState = allCorrect;
-    }
-
-    public bool AreAllSocketsValid(float tolerance = 1f)
-    {
-        foreach (Transform child in transform)
-        {
-            var socket = child.GetComponent<SocketAngleAndType>();
-            if (socket == null)
-            {
-                Debug.LogWarning($"{child.name} is missing a SocketAngleAndType component.");
-                continue;
-            }
-
-            if (!socket.IsAtAssignedAngle(tolerance))
-            {
-                Debug.LogWarning($"{child.name} is misaligned (angle check failed).");
-                return false;
-            }
-
-            if (!socket.HasCorrectWireInSocket())
-            {
-                Debug.LogWarning($"{child.name} has incorrect or missing wire.");
-                return false;
-            }
-        }
-
-        return true;
     }
 }

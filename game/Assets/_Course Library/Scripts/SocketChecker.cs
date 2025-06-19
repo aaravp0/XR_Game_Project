@@ -29,7 +29,7 @@ public class SocketChecker : MonoBehaviour
                     xRotation -= 360f;
                 }
 
-                SocketAngleAndType obj = child.GetComponent<SocketAngleAndType>();
+                SocketAngle3 obj = child.GetComponent<SocketAngle3>();
 
                 float objRotation = obj.assignedAngle;
 
